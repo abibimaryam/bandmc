@@ -9,6 +9,9 @@ from config import CHROMA_PATH,model
 
 CHROMA_PATH = CHROMA_PATH
 
+# Инициализируем эмбеддинг-функцию один раз
+embedding_func = embedding_function()
+
 PROMPT_TEMPLATE = """
 Вы — система проверки утверждений на основе контекста.
 
@@ -30,7 +33,7 @@ def query_rag(query_text: str):
     db = Chroma(
         collection_name="meds",
         persist_directory=CHROMA_PATH,
-        embedding_function=embedding_function()
+        embedding_function=embedding_func
     )
 
     print(f"🔍 Документов в базе: {db._collection.count()}")
@@ -72,7 +75,7 @@ def run_rag():
     # Проверка количества документов
     vectordb = Chroma(
         collection_name="meds",
-        embedding_function=embedding_function(),
+        embedding_function=embedding_func,
         persist_directory=CHROMA_PATH,
     )
     print(f"📊 Документов в базе: {vectordb._collection.count()}")
@@ -84,4 +87,3 @@ def run_rag():
 
 if __name__ == "__main__":
     run_rag()
-
