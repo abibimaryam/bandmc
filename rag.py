@@ -3,11 +3,8 @@
 # from langchain.prompts import ChatPromptTemplate
 # from langchain_community.llms.ollama import Ollama
 # from embedding_functiom import embedding_function
-# from config import CHROMA_PATH,model
+# from config import CHROMA_PATH, model
 
-
-
-# CHROMA_PATH = "chroma_db"
 
 # PROMPT_TEMPLATE = """
 # Ответьте на следующий вопрос, используя только приведённый ниже контекст:
@@ -17,7 +14,37 @@
 # Вопрос: {question}
 # """
 
-# def query_rag(query_text: str):
+# # 📌 Извлечение ключевых сущностей
+# def extract_key_entities(user_input: str) -> str:
+#     prompt = f"""
+# Извлеки ключевые элементы из следующего запроса, такие как:
+
+# - торговое название лекарства,
+# - международное непатентованное название (если есть),
+# - форма выпуска,
+# - дозировка,
+# - страна-производитель,
+# - фирма-производитель,
+
+
+# Верни их через запятую — одной строкой. Если ничего не найдено, верни "None".
+
+# Запрос: "{user_input}"
+# """
+#     response = model.invoke(prompt).strip()
+#     print(response)
+#     return response if response.lower() != "none" else None
+
+
+# def query_rag(user_input: str):
+#     key_phrases = extract_key_entities(user_input)
+#     if not key_phrases:
+#         print("⚠️ Не удалось выделить ключевые элементы. Выполняется общий поиск.")
+#         query_text = user_input
+#     else:
+#         print(f"🧷 Извлечены ключевые элементы: {key_phrases}")
+#         query_text = key_phrases
+
 #     db = Chroma(
 #         collection_name="meds",
 #         persist_directory=CHROMA_PATH,
@@ -26,7 +53,11 @@
 
 #     print(f"🔍 Документов в базе: {db._collection.count()}")
 #     print("🔎 Выполняется поиск по векторной базе...")
-#     results = db.similarity_search_with_score(query_text, k=10)
+#     results = db.similarity_search_with_score(query_text, k=20)
+
+#     if not results:
+#         print("❌ Ничего не найдено.")
+#         return "Ничего не найдено."
 
 #     print(f"\n📄 Найдено {len(results)} релевантных документов:\n")
 #     for i, (doc, score) in enumerate(results):
@@ -34,13 +65,9 @@
 #         print(doc.page_content[:300])
 #         print("------")
 
-#     if not results:
-#         print("❌ Ничего не найдено.")
-#         return "Ничего не найдено."
-
 #     context_text = "\n\n---\n\n".join([doc.page_content for doc, _ in results])
 #     prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
-#     prompt = prompt_template.format(context=context_text, question=query_text)
+#     prompt = prompt_template.format(context=context_text, question=user_input)
 
 #     response_text = model.invoke(prompt)
 
@@ -52,15 +79,12 @@
 
 
 # def run_rag():
-#     # Проверка наличия базы
 #     if os.path.exists(CHROMA_PATH):
 #         print("📁 Файлы в chroma_db:")
 #         print(os.listdir(CHROMA_PATH))
 #     else:
 #         print(f"❗ Папка {CHROMA_PATH} не найдена!")
 
-
-#     # Проверка количества документов
 #     vectordb = Chroma(
 #         collection_name="meds",
 #         embedding_function=embedding_function(),
@@ -68,7 +92,6 @@
 #     )
 #     print(f"📊 Документов в базе: {vectordb._collection.count()}")
 
-#     # Запрос пользователя
 #     query_text = input("\n❓ Введите ваш вопрос: ")
 #     query_rag(query_text)
 
@@ -84,16 +107,23 @@ from langchain_community.llms.ollama import Ollama
 from embedding_functiom import embedding_function
 from config import CHROMA_PATH, model
 
-
+# Новый промпт для проверки несоответствий (только выводим несоответствия)
 PROMPT_TEMPLATE = """
-Ответьте на следующий вопрос, используя только приведённый ниже контекст:
+Ниже приведён контекст из медицинской базы данных:
 
 {context}
 
-Вопрос: {question}
+Пользователь сделал следующее утверждение:
+
+{question}
+
+Проанализируй утверждение в контексте и найди ВСЕ несоответствия или ошибки относительно предоставленной информации.
+
+Выведи список только тех пунктов, где утверждение НЕ СООТВЕТСТВУЕТ данным из контекста, с кратким объяснением.
+
+Если несоответствий нет, ответь "Несоответствий не обнаружено."
 """
 
-# 📌 Извлечение ключевых сущностей
 def extract_key_entities(user_input: str) -> str:
     prompt = f"""
 Извлеки ключевые элементы из следующего запроса, такие как:
@@ -104,7 +134,6 @@ def extract_key_entities(user_input: str) -> str:
 - дозировка,
 - страна-производитель,
 - фирма-производитель,
-
 
 Верни их через запятую — одной строкой. Если ничего не найдено, верни "None".
 
@@ -148,10 +177,10 @@ def query_rag(user_input: str):
     prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
     prompt = prompt_template.format(context=context_text, question=user_input)
 
-    response_text = model.invoke(prompt)
+    response_text = model.invoke(prompt).strip()
 
     sources = [doc.metadata.get("торговое_название", "неизвестно") for doc, _ in results]
-    print(f"\n🧠 Ответ:\n{response_text}")
+    print(f"\n🧠 Ответ с несоответствиями:\n{response_text}")
     print(f"\n📚 Источники: {sources}")
 
     return response_text
@@ -171,7 +200,7 @@ def run_rag():
     )
     print(f"📊 Документов в базе: {vectordb._collection.count()}")
 
-    query_text = input("\n❓ Введите ваш вопрос: ")
+    query_text = input("\n❓ Введите ваше утверждение: ")
     query_rag(query_text)
 
 
