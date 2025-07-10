@@ -6,7 +6,7 @@ from langchain.prompts import ChatPromptTemplate
 from langchain_community.llms.ollama import Ollama
 from embedding_functiom import embedding_function
 from config import CHROMA_PATH, model
-from duckduckgo_search import DDGS
+from ddgs import DDGS
 from docx import Document
 import pdfplumber
 
@@ -158,5 +158,5 @@ def process_document(filepath: str):
 
 # --- Точка входа
 if __name__ == "__main__":
-    FILEPATH = "/home/maryam/Документы/projects/bandmc/test_data/test.txt"  # путь к файлу
+    FILEPATH = "/home/maryam/Документы/projects/bandmc/test_data/test.docx"  # путь к файлу
     process_document(FILEPATH)
