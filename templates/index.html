@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+<head>
+    <title>Upload Document</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Загрузите документ для анализа</h1>
+        <form id="uploadForm" action="/process_file" method="post" enctype="multipart/form-data">
+            <input type="file" name="file" id="fileInput">
+            <button type="submit">Проверить</button>
+        </form>
+        <hr>
+        <h2>Результаты</h2>
+        <pre id="result"></pre>
+    </div>
+
+    <script>
+        const form = document.getElementById('uploadForm');
+        const resultDiv = document.getElementById('result');
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const formData = new FormData(form);
+
+            resultDiv.textContent = 'Processing...';
+
+            try {
+                const response = await fetch('/process_file', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    resultDiv.textContent = data.result;
+                } else {
+                    resultDiv.textContent = 'Error: ' + (data.error || 'Unknown error');
+                }
+            } catch (error) {
+                resultDiv.textContent = 'Request failed: ' + error;
+            }
+        });
+    </script>
+</body>
+</html>
