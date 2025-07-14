@@ -287,7 +287,7 @@ def query_rag_with_web_search(user_input: str):
         persist_directory=CHROMA_PATH,
         embedding_function=embedding_function()
     )
-    results = db.similarity_search_with_score(query_text, k=20)
+    results = db.similarity_search_with_score(query_text, k=100)
 
     if filter_name:
         results = [(doc, score) for doc, score in results
